@@ -264,7 +264,7 @@ if uploaded_file is not None:
             if 'Call Received Date' in df_analysis.columns:
                 st.subheader("📈 Monthly Complaint Trend")
                 df_temp = df_analysis.copy()
-                df_temp['Month'] = df_temp['Call Received Date'].dt.to_period('ME').astype(str)
+                df_temp['Month'] = df_temp['Call Received Date'].dt.to_period('M').astype(str)
                 monthly_trend = df_temp.groupby('Month').size().reset_index(name='Count')
                
                 fig = px.line(monthly_trend, x='Month', y='Count', markers=True, line_shape='spline')
@@ -383,7 +383,7 @@ if uploaded_file is not None:
             if 'Call Received Date' in df_analysis.columns:
                 st.subheader("📊 Complaint Volume Forecast")
                
-                monthly_data = df_analysis.groupby(df_analysis['Call Received Date'].dt.to_period('ME')).size()
+                monthly_data = df_analysis.groupby(df_analysis['Call Received Date'].dt.to_period('M')).size()
                 monthly_data.index = monthly_data.index.to_timestamp()
                
                 if len(monthly_data) >= 3:
@@ -534,7 +534,7 @@ if uploaded_file is not None:
                     st.subheader("📅 Monthly Trends Comparison")
                    
                     df_temp = df_analysis.copy()
-                    df_temp['Month'] = df_temp['Call Received Date'].dt.to_period('ME').astype(str)
+                    df_temp['Month'] = df_temp['Call Received Date'].dt.to_period('M').astype(str)
                     monthly_by_sheet = df_temp.groupby(['Month', 'Source_Sheet']).size().reset_index(name='Count')
                    
                     fig = px.line(monthly_by_sheet, x='Month', y='Count',
@@ -588,4 +588,5 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
 
