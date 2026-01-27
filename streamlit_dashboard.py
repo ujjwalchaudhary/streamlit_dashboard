@@ -42,7 +42,7 @@ st.title("📊 Complaint Management Analytics Dashboard")
 st.markdown("---")
 
 # File upload
-uploaded_file = st.file_uploader("Upload your Excel file (supports multi-sheet workbooks)", type=['xlsx', 'xls'])
+uploaded_file = st.file_uploader("Upload your Excel file (supports multi-sheet workbooks)", type=['xlsx', 'xls','xlsm'])
 
 if uploaded_file is not None:
     try:
@@ -588,3 +588,4 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
