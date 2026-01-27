@@ -249,7 +249,7 @@ if uploaded_file is not None:
                                 color=state_counts.values,
                                 color_continuous_scale='Blues')
                     fig.update_layout(showlegend=False, height=400)
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig)
            
             with col2:
                 if 'Nature Of Fault' in df_analysis.columns:
@@ -258,7 +258,7 @@ if uploaded_file is not None:
                     fig = px.pie(values=fault_counts.values, names=fault_counts.index, hole=0.4)
                     fig.update_traces(textposition='inside', textinfo='percent+label')
                     fig.update_layout(height=400)
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig)
            
             # Trend Analysis
             if 'Call Received Date' in df_analysis.columns:
@@ -269,7 +269,7 @@ if uploaded_file is not None:
                
                 fig = px.line(monthly_trend, x='Month', y='Count', markers=True, line_shape='spline')
                 fig.update_layout(height=400, xaxis_tickangle=-45)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig)
            
             # Branch Performance
             if 'Branch' in df_analysis.columns and 'Call Status' in df_analysis.columns:
@@ -283,7 +283,7 @@ if uploaded_file is not None:
                     go.Bar(name='Pending', x=branch_status.index, y=branch_status['Pending'], marker_color='orange')
                 ])
                 fig.update_layout(barmode='stack', height=400, xaxis_tickangle=-45)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig)
        
         # ==================== TAB 2: DATA QUALITY ====================
         with tab2:
@@ -304,7 +304,7 @@ if uploaded_file is not None:
                             color_continuous_scale='Reds')
                 fig.update_traces(texttemplate='%{text:.1f}%', textposition='outside')
                 fig.update_layout(height=400, xaxis_tickangle=-45)
-                st.plotly_chart(fig, use_container_width=True)
+                st.plotly_chart(fig)
                
                 # Fix missing_data for display
                 missing_data_display = fix_dataframe_for_arrow(missing_data)
@@ -410,7 +410,7 @@ if uploaded_file is not None:
                     fig = px.line(prediction_df, x='Month', y='Complaints', color='Type',
                                  markers=True, line_dash='Type')
                     fig.update_layout(height=400)
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig)
            
             st.markdown("---")
            
@@ -429,7 +429,7 @@ if uploaded_file is not None:
                                 color=pending_by_state.values,
                                 color_continuous_scale='Reds')
                     fig.update_layout(height=350, showlegend=False)
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig)
            
             with col2:
                 st.subheader("⚡ Action Items")
@@ -519,7 +519,7 @@ if uploaded_file is not None:
                                 color='Total Records',
                                 color_continuous_scale='Viridis')
                     fig.update_layout(height=400, showlegend=False)
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig)
                
                 with col2:
                     if 'Closure Rate %' in sheet_stats.columns:
@@ -528,7 +528,7 @@ if uploaded_file is not None:
                                     color='Closure Rate %',
                                     color_continuous_scale='RdYlGn')
                         fig.update_layout(height=400, showlegend=False)
-                        st.plotly_chart(fig, use_container_width=True)
+                        st.plotly_chart(fig)
                
                 if 'Call Received Date' in df_analysis.columns:
                     st.subheader("📅 Monthly Trends Comparison")
@@ -540,10 +540,13 @@ if uploaded_file is not None:
                     fig = px.line(monthly_by_sheet, x='Month', y='Count',
                                  color='Source_Sheet', markers=True)
                     fig.update_layout(height=400, xaxis_tickangle=-45)
-                    st.plotly_chart(fig, use_container_width=True)
+                    st.plotly_chart(fig)
                
             else:
                 st.info("ℹ️ Sheet comparison is available when multiple sheets are combined or selected")
+                st.write("To use this feature:")
+                st.write("1. Select 'Combine All Sheets' or 'Select Multiple Sheets'")
+                st.write("2. The dashboard will show comparison metrics across sheets")
        
     except Exception as e:
         st.error(f"❌ Error loading file: {str(e)}")
@@ -564,12 +567,23 @@ else:
     4. **Explore insights** - Key metrics, trends, predictions
     5. **Download reports** - Export filtered data or summaries
     """)
+   
+    st.subheader("📋 Expected Data Format")
+    sample_data = pd.DataFrame({
+        'Complaint No.': ['C001', 'C002', 'C003'],
+        'Branch': ['Mumbai', 'Delhi', 'Bangalore'],
+        'State': ['Maharashtra', 'Delhi', 'Karnataka'],
+        'Call Received Date': ['2024-01-15', '2024-01-16', '2024-01-17'],
+        'Nature Of Fault': ['Hardware', 'Software', 'Network'],
+        'Call Status': ['Closed', 'Pending', 'Closed']
+    })
+    st.dataframe(sample_data, width='stretch')
 
 st.markdown("---")
 st.markdown(
     """
     <div style='text-align: center'>
-        <p>Made with ❤️ using Streamlit | Multi-Sheet Dashboard v2.2</p>
+        <p>Made with ❤️ using Streamlit | Multi-Sheet Dashboard v3.0</p>
     </div>
     """,
     unsafe_allow_html=True
