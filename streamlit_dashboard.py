@@ -451,10 +451,10 @@ if current_file is not None:
            
            st.subheader("🔍 Duplicate Analysis")
 
-              if 'Complaint No.' in df_analysis.columns:
-              duplicates = df_analysis[
-              df_analysis.duplicated(subset=['Complaint No.'], keep=False)
-              ].copy()
+               if 'Complaint No.' in df_analysis.columns:
+               duplicates = df_analysis[
+               df_analysis.duplicated(subset=['Complaint No.'], keep=False)
+               ].copy()
 
           if len(duplicates) > 0:
           st.warning(f"⚠️ Found {len(duplicates)} duplicate complaint records")
@@ -678,4 +678,5 @@ Made with ❤️ using Streamlit | Multi-Sheet Dashboard with File History v3.1
 """,
 unsafe_allow_html=True
 ) 
+
 
