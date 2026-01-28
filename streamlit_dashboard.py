@@ -449,7 +449,7 @@ if current_file is not None:
                 st.write("- Improve quote turnaround time")
                 st.write("- Implement automated status updates")
            
-           st.subheader("🔍 Duplicate Analysis")
+               st.subheader("🔍 Duplicate Analysis")
 
                if 'Complaint No.' in df_analysis.columns:
                duplicates = df_analysis[
@@ -678,5 +678,6 @@ Made with ❤️ using Streamlit | Multi-Sheet Dashboard with File History v3.1
 """,
 unsafe_allow_html=True
 ) 
+
 
 
