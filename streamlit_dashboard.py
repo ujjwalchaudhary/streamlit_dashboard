@@ -639,9 +639,6 @@ if current_file is not None:
         with st.expander("🔍 Debug Information"):
             st.write(f"Error type: {type(e).__name__}")
             st.write(f"Error message: {str(e)}")
-
-
-Error message: {str(e)}")
 import traceback
 st.code(traceback.format_exc())
 else:
