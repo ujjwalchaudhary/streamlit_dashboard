@@ -17,6 +17,13 @@ st.set_page_config(
     layout="wide"
 )
 
+# Initialize session state for file history
+if 'file_history' not in st.session_state:
+    st.session_state.file_history = []
+
+if 'current_file_index' not in st.session_state:
+    st.session_state.current_file_index = None
+
 # Helper function to fix dataframe for Arrow compatibility
 def fix_dataframe_for_arrow(df):
     """Convert all problematic columns to Arrow-compatible types"""
@@ -42,18 +49,97 @@ st.title("📊 Complaint Management Analytics Dashboard")
 st.markdown("---")
 
 # File upload
-uploaded_file = st.file_uploader("Upload your Excel file (supports multi-sheet workbooks)", type=['xlsx', 'xls','xlsm'])
+uploaded_file = st.file_uploader(
+    "📁 Upload your Excel file (Supports: .xlsx, .xls, .xlsm with multi-sheet workbooks)",
+    type=['xlsx', 'xls', 'xlsm'],
+    help="Your file can contain multiple sheets. Macros will be ignored."
+)
 
+# Add uploaded file to history
 if uploaded_file is not None:
+    file_info = {
+        'name': uploaded_file.name,
+        'size': uploaded_file.size,
+        'upload_time': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
+        'file_obj': uploaded_file
+    }
+   
+    # Check if file already in history (by name)
+    file_names = [f['name'] for f in st.session_state.file_history]
+   
+    if uploaded_file.name not in file_names:
+        st.session_state.file_history.append(file_info)
+        st.session_state.current_file_index = len(st.session_state.file_history) - 1
+    else:
+        # Update existing file
+        existing_idx = file_names.index(uploaded_file.name)
+        st.session_state.file_history[existing_idx] = file_info
+        st.session_state.current_file_index = existing_idx
+
+# Sidebar - File History
+st.sidebar.header("📁 Uploaded Files History")
+
+if len(st.session_state.file_history) > 0:
+    st.sidebar.write(f"**Total Files:** {len(st.session_state.file_history)}")
+    st.sidebar.markdown("---")
+   
+    # Display each file with details
+    for idx, file_info in enumerate(st.session_state.file_history):
+        is_current = (idx == st.session_state.current_file_index)
+       
+        with st.sidebar.expander(
+            f"{'✅ ' if is_current else '📄 '}{file_info['name']}",
+            expanded=is_current
+        ):
+            st.write(f"**Size:** {file_info['size'] / 1024:.2f} KB")
+            st.write(f"**Uploaded:** {file_info['upload_time']}")
+           
+            col1, col2 = st.columns(2)
+            with col1:
+                if not is_current:
+                    if st.button(f"📂 Load", key=f"load_{idx}"):
+                        st.session_state.current_file_index = idx
+                        st.rerun()
+                else:
+                    st.success("Current")
+           
+            with col2:
+                if st.button(f"🗑️ Delete", key=f"remove_{idx}"):
+                    st.session_state.file_history.pop(idx)
+                    if st.session_state.current_file_index == idx:
+                        st.session_state.current_file_index = None
+                    elif st.session_state.current_file_index and st.session_state.current_file_index > idx:
+                        st.session_state.current_file_index -= 1
+                    st.rerun()
+   
+    # Clear all button
+    st.sidebar.markdown("---")
+    if st.sidebar.button("🗑️ Clear All History"):
+        st.session_state.file_history = []
+        st.session_state.current_file_index = None
+        st.rerun()
+else:
+    st.sidebar.info("📭 No files uploaded yet")
+
+st.sidebar.markdown("---")
+
+# Get current file to process
+current_file = None
+if st.session_state.current_file_index is not None and len(st.session_state.file_history) > 0:
+    current_file = st.session_state.file_history[st.session_state.current_file_index]['file_obj']
+elif uploaded_file is not None:
+    current_file = uploaded_file
+
+if current_file is not None:
     try:
         # Read all sheets from Excel file
-        excel_file = pd.ExcelFile(uploaded_file)
+        excel_file = pd.ExcelFile(current_file)
         sheet_names = excel_file.sheet_names
        
         st.success(f"✅ File loaded successfully! Found {len(sheet_names)} sheet(s)")
        
         # Display available sheets
-        with st.expander("📑 Available Sheets in Workbook", expanded=True):
+        with st.expander("📑 Available Sheets in Workbook", expanded=False):
             col1, col2 = st.columns([1, 3])
             with col1:
                 st.write("**Sheet Name**")
@@ -400,7 +486,7 @@ if uploaded_file is not None:
                     with col3:
                         st.metric("3-Month Average", f"{int(last_3_months_avg):,}")
                    
-                    future_months = pd.date_range(monthly_data.index[-1], periods=4, freq='ME')[1:]
+                    future_months = pd.date_range(monthly_data.index[-1], periods=4, freq='M')[1:]
                     prediction_df = pd.DataFrame({
                         'Month': list(monthly_data.index) + list(future_months),
                         'Complaints': list(monthly_data.values) + [next_month_prediction]*3,
@@ -553,40 +639,36 @@ if uploaded_file is not None:
         with st.expander("🔍 Debug Information"):
             st.write(f"Error type: {type(e).__name__}")
             st.write(f"Error message: {str(e)}")
-            import traceback
-            st.code(traceback.format_exc())
-
+import traceback
+st.code(traceback.format_exc())
 else:
-    st.info("👆 Please upload an Excel file to get started")
-   
-    st.subheader("📝 How to Use")
-    st.write("""
-    1. **Upload your Excel file** - Supports both single and multi-sheet workbooks
-    2. **Select data source** - Single sheet, combine all, or select multiple
-    3. **Apply filters** - State, Branch, Date range
-    4. **Explore insights** - Key metrics, trends, predictions
-    5. **Download reports** - Export filtered data or summaries
-    """)
-   
-    st.subheader("📋 Expected Data Format")
-    sample_data = pd.DataFrame({
-        'Complaint No.': ['C001', 'C002', 'C003'],
-        'Branch': ['Mumbai', 'Delhi', 'Bangalore'],
-        'State': ['Maharashtra', 'Delhi', 'Karnataka'],
-        'Call Received Date': ['2024-01-15', '2024-01-16', '2024-01-17'],
-        'Nature Of Fault': ['Hardware', 'Software', 'Network'],
-        'Call Status': ['Closed', 'Pending', 'Closed']
-    })
-    st.dataframe(sample_data, width='stretch')
+st.info("👆 Please upload an Excel file to get started")
+st.subheader("📝 How to Use")
+st.write("""
+1. **Upload your Excel file** - Supports both single and multi-sheet workbooks
+2. **View file history** - See all uploaded files in the sidebar
+3. **Select data source** - Single sheet, combine all, or select multiple
+4. **Apply filters** - State, Branch, Date range
+5. **Explore insights** - Key metrics, trends, predictions
+6. **Download reports** - Export filtered data or summaries
+""")
 
+st.subheader("📋 Expected Data Format")
+sample_data = pd.DataFrame({
+    'Complaint No.': ['C001', 'C002', 'C003'],
+    'Branch': ['Mumbai', 'Delhi', 'Bangalore'],
+    'State': ['Maharashtra', 'Delhi', 'Karnataka'],
+    'Call Received Date': ['2024-01-15', '2024-01-16', '2024-01-17'],
+    'Nature Of Fault': ['Hardware', 'Software', 'Network'],
+    'Call Status': ['Closed', 'Pending', 'Closed']
+})
+st.dataframe(sample_data, width='stretch')
 st.markdown("---")
 st.markdown(
-    """
-    <div style='text-align: center'>
-        <p>Made with ❤️ using Streamlit | Multi-Sheet Dashboard v3.0</p>
-    </div>
-    """,
-    unsafe_allow_html=True
-)
+"""
 
+Made with ❤️ using Streamlit | Multi-Sheet Dashboard with File History v3.1
 
+""",
+unsafe_allow_html=True
+) 
