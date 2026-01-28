@@ -449,18 +449,24 @@ if current_file is not None:
                 st.write("- Improve quote turnaround time")
                 st.write("- Implement automated status updates")
            
-            st.subheader("🔍 Duplicate Analysis")
-            if 'Complaint No.' in df_analysis.columns:
-                duplicates = df_analysis[df_analysis.duplicated(subset=['Complaint No.'], keep=False)].copy()
-                if len(duplicates) > 0:
-                    st.warning(f"⚠️ Found {len(duplicates)} duplicate complaint numbers")
-                    display_cols = ['Complaint No.', 'Branch', 'Call Received Date', 'Call Status']
-                    if 'Source_Sheet' in df_analysis.columns:
-                        display_cols.append('Source_Sheet')
-                    duplicates_display = fix_dataframe_for_arrow(duplicates[display_cols])
-                    st.dataframe(duplicates_display, width='stretch')
-                else:
-                    st.success("✅ No duplicate complaint numbers found!")
+           st.subheader("🔍 Duplicate Analysis")
+
+if 'Complaint No.' in df_analysis.columns:
+    duplicates = df_analysis[
+        df_analysis.duplicated(subset=['Complaint No.'], keep=False)
+    ].copy()
+
+    if len(duplicates) > 0:
+        st.warning(f"⚠️ Found {len(duplicates)} duplicate complaint records")
+
+        duplicates_display = fix_dataframe_for_arrow(duplicates)
+        st.dataframe(duplicates_display, width='stretch')
+
+    else:
+        st.success("✅ No duplicate complaints found")
+
+else:
+    st.info("ℹ️ 'Complaint No.' column not available for duplicate check") 
        
         # ==================== TAB 3: FUTURE PREDICTIONS ====================
         with tab3:
