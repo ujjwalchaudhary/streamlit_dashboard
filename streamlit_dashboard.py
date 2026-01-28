@@ -451,22 +451,22 @@ if current_file is not None:
            
            st.subheader("🔍 Duplicate Analysis")
 
-if 'Complaint No.' in df_analysis.columns:
-    duplicates = df_analysis[
-        df_analysis.duplicated(subset=['Complaint No.'], keep=False)
-    ].copy()
+              if 'Complaint No.' in df_analysis.columns:
+              duplicates = df_analysis[
+              df_analysis.duplicated(subset=['Complaint No.'], keep=False)
+              ].copy()
 
-    if len(duplicates) > 0:
-        st.warning(f"⚠️ Found {len(duplicates)} duplicate complaint records")
+          if len(duplicates) > 0:
+          st.warning(f"⚠️ Found {len(duplicates)} duplicate complaint records")
 
-        duplicates_display = fix_dataframe_for_arrow(duplicates)
-        st.dataframe(duplicates_display, width='stretch')
+          duplicates_display = fix_dataframe_for_arrow(duplicates)
+          st.dataframe(duplicates_display, width='stretch')
 
-    else:
-        st.success("✅ No duplicate complaints found")
+           else:
+           st.success("✅ No duplicate complaints found")
 
-else:
-    st.info("ℹ️ 'Complaint No.' column not available for duplicate check") 
+           else:
+           st.info("ℹ️ 'Complaint No.' column not available for duplicate check") 
        
         # ==================== TAB 3: FUTURE PREDICTIONS ====================
         with tab3:
@@ -678,3 +678,4 @@ Made with ❤️ using Streamlit | Multi-Sheet Dashboard with File History v3.1
 """,
 unsafe_allow_html=True
 ) 
+
