@@ -462,14 +462,86 @@ if current_file is not None:
                     st.dataframe(duplicates_display, use_container_width=True)
                 else:
                     st.success("✅ No duplicate complaint numbers found!")
-      
-        # ==================== TAB 3: FUTURE PREDICTIONS ====================
+        # ==================== TAB 3: ENHANCED PREDICTIONS & INSIGHTS ====================
         with tab3:
-            st.header("🔮 Future Predictions & Insights")
-          
+            st.header("🔮 Advanced Insights & Repetitive Analysis")
+           
+            # --- CAPABILITY 1 & 2: REPETITIVE SOL ID & RECURRING ISSUES ---
+            col1, col2 = st.columns(2)
+           
+            # We assume 'Sol ID' or 'Site ID' exists. Adjust string if your column name differs.
+            sol_col = 'Sol ID' if 'Sol ID' in df_analysis.columns else 'Complaint No.' # Fallback
+            fault_col = 'Nature Of Fault'
+           
+            with col1:
+                st.subheader("🔁 Top Repetitive Sol IDs")
+                if sol_col in df_analysis.columns:
+                    rep_sol = df_analysis[sol_col].value_counts().reset_index()
+                    rep_sol.columns = [sol_col, 'Frequency']
+                    top_rep = rep_sol[rep_sol['Frequency'] > 1].head(10)
+                   
+                    if not top_rep.empty:
+                        fig_sol = px.bar(top_rep, x=sol_col, y='Frequency',
+                                        color='Frequency', title="Frequent Sol IDs (Multiple Complaints)")
+                        st.plotly_chart(fig_sol, use_container_width=True)
+                    else:
+                        st.info("No repetitive Sol IDs found in this filter range.")
+                else:
+                    st.warning(f"Column '{sol_col}' not found for repetitive analysis.")
+
+            with col2:
+                st.subheader("🔧 Most Recurring Issues")
+                if fault_col in df_analysis.columns:
+                    recurring_issues = df_analysis[fault_col].value_counts().reset_index()
+                    recurring_issues.columns = [fault_col, 'Occurrences']
+                   
+                    fig_faults = px.pie(recurring_issues.head(10), values='Occurrences', names=fault_col,
+                                       hole=0.4, title="Top 10 Fault Categories")
+                    st.plotly_chart(fig_faults, use_container_width=True)
+           
+            st.markdown("---")
+
+            # --- CAPABILITY 3: OPEN COMPLAINTS VS RECURRING ISSUES ---
+            st.subheader("🚨 High-Risk Open Complaints")
+            st.write("Current open complaints linked to the most frequent Sol IDs and Fault Types.")
+
+            if 'Call Status' in df_analysis.columns:
+                # Filter for Open/Pending
+                open_mask = ~df_analysis['Call Status'].str.contains('Close|Closed', case=False, na=False)
+                df_open = df_analysis[open_mask].copy()
+
+                if not df_open.empty:
+                    # Logic: Find Sol IDs that have appeared > 2 times in the whole dataset
+                    frequent_sols = df_analysis[sol_col].value_counts()
+                    frequent_sols = frequent_sols[frequent_sols > 1].index.tolist()
+
+                    # Highlight open complaints that are part of a repeat Sol ID
+                    df_open['Is_Repeat_Site'] = df_open[sol_col].isin(frequent_sols)
+                   
+                    # Filtering columns for display
+                    display_cols = [c for c in [sol_col, 'Complaint No.', fault_col, 'Branch', 'Call Received Date', 'Is_Repeat_Site'] if c in df_open.columns]
+                   
+                    # Sort so the repeats are at the top
+                    df_open_display = df_open[display_cols].sort_values(by='Is_Repeat_Site', ascending=False)
+                   
+                    st.dataframe(fix_dataframe_for_arrow(df_open_display), use_container_width=True)
+                   
+                    # Statistical summary of risks
+                    risk_col1, risk_col2 = st.columns(2)
+                    with risk_col1:
+                        repeat_open_count = df_open['Is_Repeat_Site'].sum()
+                        st.metric("Open Complaints on Repeat Sites", repeat_open_count)
+                    with risk_col2:
+                        if fault_col in df_open.columns:
+                            top_open_fault = df_open[fault_col].mode()[0] if not df_open[fault_col].mode().empty else "N/A"
+                            st.metric("Top Issue in Open Calls", top_open_fault)
+                else:
+                    st.success("No open complaints found!")
+
+            # --- VOLUME TREND (Retained from original) ---
             if 'Call Received Date' in df_analysis.columns:
+                st.markdown("---")
                 st.subheader("📊 Complaint Volume Forecast")
-              
                 monthly_data = df_analysis.groupby(df_analysis['Call Received Date'].dt.to_period('M')).size()
                 monthly_data.index = monthly_data.index.to_timestamp()
               
@@ -478,65 +550,19 @@ if current_file is not None:
                     trend = (monthly_data.tail(3).values[-1] - monthly_data.tail(3).values[0]) / 2
                     next_month_prediction = last_3_months_avg + trend
                   
-                    col1, col2, col3 = st.columns(3)
-                    with col1:
-                        st.metric("Last Month", f"{int(monthly_data.iloc[-1]):,}")
-                    with col2:
-                        st.metric("Predicted Next Month", f"{int(next_month_prediction):,}",
-                                 f"{((next_month_prediction - monthly_data.iloc[-1])/monthly_data.iloc[-1]*100):.1f}%")
-                    with col3:
-                        st.metric("3-Month Average", f"{int(last_3_months_avg):,}")
-                  
+                    p_col1, p_col2 = st.columns(2)
+                    p_col1.metric("Predicted Next Month Volume", f"{int(next_month_prediction):,}")
+                   
                     future_months = pd.date_range(monthly_data.index[-1], periods=4, freq='M')[1:]
                     prediction_df = pd.DataFrame({
                         'Month': list(monthly_data.index) + list(future_months),
                         'Complaints': list(monthly_data.values) + [next_month_prediction]*3,
                         'Type': ['Actual']*len(monthly_data) + ['Predicted']*3
                     })
-                  
-                    fig = px.line(prediction_df, x='Month', y='Complaints', color='Type',
-                                 markers=True, line_dash='Type')
-                    fig.update_layout(height=400)
-                    st.plotly_chart(fig, use_container_width=True)
-          
-            st.markdown("---")
-          
-            col1, col2 = st.columns(2)
-          
-            with col1:
-                st.subheader("🎯 High Priority Areas")
-              
-                if 'State' in df_analysis.columns and 'Call Status' in df_analysis.columns:
-                    pending_by_state = df_analysis[
-                        ~df_analysis['Call Status'].str.contains('Close|Closed', case=False, na=False)
-                    ].groupby('State').size().sort_values(ascending=False).head(5)
-                  
-                    fig = px.bar(x=pending_by_state.index, y=pending_by_state.values,
-                                labels={'x': 'State', 'y': 'Pending Complaints'},
-                                color=pending_by_state.values,
-                                color_continuous_scale='Reds')
-                    fig.update_layout(height=350, showlegend=False)
-                    st.plotly_chart(fig, use_container_width=True)
-          
-            with col2:
-                st.subheader("⚡ Action Items")
-              
-                if 'Call Received Date' in df_analysis.columns and 'Call Close Date' in df_analysis.columns:
-                    pending_df = df_analysis[df_analysis['Call Close Date'].isna()].copy()
-                    if len(pending_df) > 0:
-                        pending_df['Days Open'] = (datetime.now() - pending_df['Call Received Date']).dt.days
-                        old_complaints = len(pending_df[pending_df['Days Open'] > 30])
-                      
-                        st.error(f"🚨 {old_complaints} complaints open >30 days")
-                        st.warning(f"⚠️ {len(pending_df)} total pending complaints")
-                      
-                        st.write("**Oldest Open Complaints:**")
-                        display_cols = ['Complaint No.', 'Branch', 'State', 'Days Open', 'Nature Of Fault']
-                        if 'Source_Sheet' in df_analysis.columns:
-                            display_cols.append('Source_Sheet')
-                        oldest = pending_df.nlargest(5, 'Days Open')[display_cols]
-                        oldest_display = fix_dataframe_for_arrow(oldest)
-                        st.dataframe(oldest_display, use_container_width=True)
+                    fig_forecast = px.line(prediction_df, x='Month', y='Complaints', color='Type', markers=True)
+                    st.plotly_chart(fig_forecast, use_container_width=True)
+
+ 
       
         # ==================== TAB 4: RAW DATA ====================
         with tab4:
@@ -674,3 +700,4 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
