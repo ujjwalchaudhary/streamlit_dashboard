@@ -192,34 +192,45 @@ if current_file:
 
             col1, col2 = st.columns(2)
 
-            # ---- Repeated SOL ID ----
-            with col1:
-                if "SOL ID" in df_analysis.columns:
-                    sol_df = (
-                        df_analysis["SOL ID"]
-                        .dropna()
-                        .astype(str)
-                        .value_counts()
-                        .head(10)
-                        .reset_index()
-                    )
-                    sol_df.columns = ["SOL ID", "Complaint Count"]
+          # ---- REPEATED SOL ID (ACTUAL RECURSION) ----
+with col1:
+    if 'SOL ID' in df_analysis.columns:
+        st.write("🏦 Repeated SOL IDs (Recursion Analysis)")
 
-                    if not sol_df.empty:
-                        st.write("🏦 Top Repeated SOL IDs")
-                        st.plotly_chart(
-                            px.bar(
-                                sol_df,
-                                x="SOL ID",
-                                y="Complaint Count",
-                                color="Complaint Count",
-                            ),
-                            use_container_width=True,
-                        )
-                        st.dataframe(
-                            fix_dataframe_for_arrow(sol_df),
-                            use_container_width=True,
-                        )
+        sol_repeat_df = (
+            df_analysis['SOL ID']
+            .dropna()
+            .astype(str)
+            .value_counts()
+            .reset_index()
+        )
+        sol_repeat_df.columns = ['SOL ID', 'Total Complaints']
+
+        # 🔥 keep only repeated SOL IDs
+        sol_repeat_df = sol_repeat_df[sol_repeat_df['Total Complaints'] > 1]
+
+        if not sol_repeat_df.empty:
+            sol_repeat_df = sol_repeat_df.sort_values(
+                'Total Complaints', ascending=False
+            ).head(15)
+
+            fig = px.bar(
+                sol_repeat_df,
+                x='SOL ID',
+                y='Total Complaints',
+                color='Total Complaints',
+                color_continuous_scale='Blues'
+            )
+            fig.update_layout(showlegend=False, height=350)
+            st.plotly_chart(fig, use_container_width=True)
+
+            st.dataframe(
+                fix_dataframe_for_arrow(sol_repeat_df),
+                use_container_width=True
+            )
+        else:
+            st.success("✅ No repeated SOL IDs found")
+
 
             # ---- Repeated Nature of Fault ----
             with col2:
@@ -296,3 +307,4 @@ else:
 
 st.markdown("---")
 st.caption("Built with ❤️ using Streamlit")
+
