@@ -538,50 +538,109 @@ if current_file is not None:
                         st.dataframe(oldest_display, use_container_width=True)
 
 
-        # ==================== RECURRING ISSUE INTELLIGENCE ====================
-st.markdown("---")
-st.subheader("🔁 Recurring Issue Intelligence")
+       # ==================== TAB 3 EXTENSION: RECURRING ISSUES ====================
+with tab3:
+    st.markdown("---")
+    st.subheader("🔁 Recurring Issue Intelligence")
 
-col1, col2 = st.columns(2)
+    col1, col2 = st.columns(2)
 
-# ---------- REPEATED SOL ID (COUNT > 1) ----------
-with col1:
-    if 'SOL ID' in df_analysis.columns:
-        st.write("🏦 **Repeated SOL IDs (Recursion)**")
-
-        sol_repeat_df = (
-            df_analysis['SOL ID']
-            .dropna()
-            .astype(str)
-            .value_counts()
-            .reset_index()
-        )
-        sol_repeat_df.columns = ['SOL ID', 'Repeat Count']
-
-        # 🔑 keep only repeated SOL IDs
-        sol_repeat_df = sol_repeat_df[sol_repeat_df['Repeat Count'] > 1]
-
-        if not sol_repeat_df.empty:
-            sol_repeat_df = sol_repeat_df.sort_values(
-                'Repeat Count', ascending=False
-            ).head(15)
-
-            fig = px.bar(
-                sol_repeat_df,
-                x='SOL ID',
-                y='Repeat Count',
-                color='Repeat Count',
-                color_continuous_scale='Blues'
+    # ---------- REPEATED SOL ID ----------
+    with col1:
+        if 'SOL ID' in df_analysis.columns:
+            sol_repeat_df = (
+                df_analysis['SOL ID']
+                .dropna()
+                .astype(str)
+                .value_counts()
+                .reset_index()
             )
-            fig.update_layout(height=350, showlegend=False)
-            st.plotly_chart(fig, use_container_width=True)
+            sol_repeat_df.columns = ['SOL ID', 'Repeat Count']
+            sol_repeat_df = sol_repeat_df[sol_repeat_df['Repeat Count'] > 1]
 
+            if not sol_repeat_df.empty:
+                sol_repeat_df = sol_repeat_df.sort_values(
+                    'Repeat Count', ascending=False
+                ).head(15)
+
+                st.write("🏦 **Repeated SOL IDs**")
+                st.plotly_chart(
+                    px.bar(
+                        sol_repeat_df,
+                        x='SOL ID',
+                        y='Repeat Count',
+                        color='Repeat Count',
+                        color_continuous_scale='Blues'
+                    ),
+                    use_container_width=True
+                )
+
+                st.dataframe(
+                    fix_dataframe_for_arrow(sol_repeat_df),
+                    use_container_width=True
+                )
+            else:
+                st.success("✅ No repeated SOL IDs found")
+
+    # ---------- REPEATED NATURE OF FAULT ----------
+    with col2:
+        if 'Nature Of Fault' in df_analysis.columns:
+            fault_repeat_df = (
+                df_analysis['Nature Of Fault']
+                .dropna()
+                .astype(str)
+                .value_counts()
+                .reset_index()
+            )
+            fault_repeat_df.columns = ['Nature Of Fault', 'Repeat Count']
+            fault_repeat_df = fault_repeat_df[fault_repeat_df['Repeat Count'] > 1]
+
+            if not fault_repeat_df.empty:
+                fault_repeat_df = fault_repeat_df.sort_values(
+                    'Repeat Count', ascending=False
+                ).head(15)
+
+                st.write("🔧 **Recurring Fault Types**")
+                st.plotly_chart(
+                    px.bar(
+                        fault_repeat_df,
+                        x='Nature Of Fault',
+                        y='Repeat Count',
+                        color='Repeat Count',
+                        color_continuous_scale='Oranges'
+                    ),
+                    use_container_width=True
+                )
+
+                st.dataframe(
+                    fix_dataframe_for_arrow(fault_repeat_df),
+                    use_container_width=True
+                )
+            else:
+                st.success("✅ No recurring fault types detected")
+
+    # ---------- SOL × FAULT HOTSPOTS ----------
+    if 'SOL ID' in df_analysis.columns and 'Nature Of Fault' in df_analysis.columns:
+        st.subheader("🔥 Chronic SOL × Fault Hotspots")
+
+        hotspot_df = (
+            df_analysis
+            .dropna(subset=['SOL ID', 'Nature Of Fault'])
+            .groupby(['SOL ID', 'Nature Of Fault'])
+            .size()
+            .reset_index(name='Repeat Count')
+            .sort_values('Repeat Count', ascending=False)
+        )
+
+        hotspot_df = hotspot_df[hotspot_df['Repeat Count'] > 1].head(15)
+
+        if not hotspot_df.empty:
             st.dataframe(
-                fix_dataframe_for_arrow(sol_repeat_df),
+                fix_dataframe_for_arrow(hotspot_df),
                 use_container_width=True
             )
         else:
-            st.success("✅ No repeated SOL IDs detected")
+            st.success("✅ No recurring SOL–Fault combinations found")
 
 # ---------- REPEATED NATURE OF FAULT ----------
 with col2:
@@ -784,3 +843,4 @@ st.markdown(
     """,
     unsafe_allow_html=True
 )
+
